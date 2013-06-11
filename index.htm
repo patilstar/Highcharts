@@ -1,0 +1,279 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Highcharts :: Design and implementation problem for visualization</title>
+
+		
+	</head>
+	<body>
+
+
+Select Start Day: 
+<select id="start_day" onchange="setChart(this.value);"><option value="1" selected>1</option></select>
+<div id="containerSalesChart" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+<hr>
+<div id="containerSpotsChart" style="min-width: 400px; height: 400px; margin: 0 auto;box-shadow:100px 10px 100px;"></div>
+<hr>
+<div style="float:left;width:50%">
+	<div id="containerLinearRegression" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+</div>
+<div style="float:right;width:50%">
+	<div id="containerLinearRegressionSales" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+</div>
+</body>
+
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="js/highcharts.js"></script>
+<script src="js/modules/exporting.js"></script>
+		<script type="text/javascript">
+			var chart;
+			var max_sales_amount 	= 5000000;
+			var max_peak_spots 		= 100000;
+			var max_non_peak_spots 	= 40000;
+			var num_days_per_year 	= 365;
+			var random_number_sales, random_number_peak, random_number_non_peak;
+			var yearly_data_sales = [], yearly_data_peak= [], yearly_data_non_peak= [], yearly_data_sales_moving_average = [] , yearly_data_index = []; 
+			
+			var next_5day_sales = [], next_5day_peak = [], next_5day_non_peak = [];
+			var index = 1;
+			while (num_days_per_year--) {
+				random_number_sales 	= Math.floor(Math.random() * max_sales_amount);
+				random_number_peak 		= Math.floor(Math.random() * max_peak_spots);
+				random_number_non_peak 	= Math.floor(Math.random() * max_non_peak_spots);				
+				yearly_data_sales[index] 	= random_number_sales;
+				yearly_data_peak[index] 	= random_number_peak;
+				yearly_data_non_peak[index] = random_number_non_peak;
+				yearly_data_index[index] = index;
+				if(index >= 30){
+					start_index = index - 29;
+					sma = yearly_data_peak.slice(start_index,index);					
+					yearly_data_sales_moving_average[start_index] = Math.round(getSumOfArrayValues(sma) / 30);
+					
+				}
+				index++;			
+			}
+		
+			last_5day_sales = yearly_data_sales.slice((num_days_per_year - 5), num_days_per_year);
+			last_5day_peak = yearly_data_peak.slice((num_days_per_year - 5), num_days_per_year);
+			last_5day_non_peak = yearly_data_non_peak.slice((num_days_per_year - 5), num_days_per_year);
+		
+			next_5day = getNext5Days(last_5day_sales);
+			next_5day_sales = next_5day.split("|");
+			next_5day = getNext5Days(last_5day_peak);
+			next_5day_peak = next_5day.split("|");
+			next_5day = getNext5Days(last_5day_non_peak);
+			next_5day_non_peak = next_5day.split("|");
+		
+			function getSumOfArrayValues(array){
+				array_length = array.length;
+				sum = 0;
+				for (var i = 0; i < array_length; i++) {
+						sum += array[i] ;//<< 0;
+				}
+				return sum;
+			}
+			function getNext5Days(last_day){				
+				next_day_1 = Math.round((last_day[4] + last_day[3] + last_day[2] + last_day[1] + last_day[0]) / 5) ;
+				next_day_2 = Math.round((last_day[4] + last_day[3] + last_day[2] + last_day[1] + next_day_1) / 5) ;
+				next_day_3 = Math.round((last_day[4] + last_day[3] + last_day[2] + next_day_1 + next_day_2) / 5) ;
+				next_day_4 = Math.round((last_day[4] + last_day[3] + next_day_1 + next_day_2 + next_day_3) / 5) ;
+				next_day_5 = Math.round((last_day[4] + next_day_1 + next_day_2 + next_day_3 + next_day_4) / 5) ;				
+				return  next_day_1 + "|" + next_day_5 ;		
+			
+			}
+		
+
+			$(function () {
+				setSalesChart = function (start_day){
+					var options = {
+							chart: {
+								renderTo: 'containerSalesChart',
+								type: 'line'
+							},
+							title: {
+								text: '30 day sales moving average'
+							},
+							subtitle: {
+								text: 'Source: Wonderbiz.com'
+							},
+							xAxis: {
+								categories: []
+							},
+							yAxis: {
+								title: {
+								text: 'Amount (Euros)'
+								}
+							},
+							tooltip: {
+								enabled: false,
+								formatter: function() {
+									return '<b>'+ this.series.name +'</b><br/>'+
+									this.x +': '+ this.y +'°C';
+								}
+							},
+							plotOptions: {
+								line: {
+								dataLabels: {
+									enabled: true
+								},
+								enableMouseTracking: false
+								}
+							},
+							series: [{},{}]
+					};
+    
+					end_day = start_day + 20;
+					current_chart_data_index =yearly_data_index.slice(start_day,end_day);
+					current_chart_data_sales = yearly_data_sales.slice(start_day,end_day);
+					current_chart_data_peak = yearly_data_peak.slice(start_day,end_day);
+					current_chart_data_non_peak = yearly_data_non_peak.slice(start_day,end_day);
+					current_chart_data_sales_moving_average = yearly_data_sales_moving_average.slice(start_day,end_day);
+
+					options.xAxis.categories = current_chart_data_index;
+					options.series[0].name = "Sales Amount";
+					options.series[0].data = current_chart_data_sales;
+					options.series[1].name = "Sales Moving Average";
+					options.series[1].data = current_chart_data_sales_moving_average;
+
+					chart = new Highcharts.Chart(options);
+
+				},
+
+				setSpotsChart = function (start_day){
+					var options = {
+							chart: {
+								renderTo: 'containerSpotsChart',
+								type: 'line'
+							},
+							title: {
+								text: 'peak spots, non-peak spots'
+							},
+							subtitle: {
+								text: 'Source: Wonderbiz.com'
+							},
+							xAxis: {
+								categories: []
+							},
+							yAxis: {
+								title: {
+								text: 'Television spot (counts)'
+								}
+							},
+							tooltip: {
+								enabled: false,
+								formatter: function() {
+								return '<b>'+ this.series.name +'</b><br/>'+
+								this.x +': '+ this.y +'°C';
+								}
+							},
+							plotOptions: {
+								line: {
+								dataLabels: {
+								enabled: true
+								},
+								enableMouseTracking: false
+								}
+							},
+							series: [{},{}]
+					};
+    
+					end_day = start_day + 20;
+					current_chart_data_index =yearly_data_index.slice(start_day,end_day);
+					current_chart_data_sales = yearly_data_sales.slice(start_day,end_day);
+					current_chart_data_peak = yearly_data_peak.slice(start_day,end_day);
+					current_chart_data_non_peak = yearly_data_non_peak.slice(start_day,end_day);
+					current_chart_data_sales_moving_average = yearly_data_sales_moving_average.slice(start_day,end_day);
+
+					options.xAxis.categories = current_chart_data_index;
+					options.series[0].name = "Peak spots";
+					options.series[0].data = current_chart_data_peak;
+					options.series[1].name = "Non-peak spots";
+					options.series[1].data = current_chart_data_non_peak;
+					chart = new Highcharts.Chart(options);
+
+				},
+
+				setLinearRegression = function(){
+					$('#containerLinearRegression').highcharts({
+						chart: {
+					},
+					xAxis: {
+						min: -0.5,
+						max: 5.5
+					},
+					yAxis: {
+						min: 10000
+					},
+					title: {
+						text: 'Peak and Non-peak Spots Prediction'
+					},
+					series: [{
+						type: 'line',
+						name: 'Peak spots',
+						data: [[1, parseInt(next_5day_peak[0])], [5, parseInt(next_5day_peak[1])]],
+						marker: {
+							enabled: false
+						},
+						states: {
+							hover: {
+							lineWidth: 0
+							}
+						},
+						enableMouseTracking: true
+					}, {
+						type: 'line',
+						name: 'Non-peak spots',
+						data: [[1, parseInt(next_5day_non_peak[0])], [5, parseInt(next_5day_non_peak[1])]],
+						marker: {
+							enabled: false
+						}
+					}]
+				});
+			},
+			setLinearRegressionSales = function(){
+					$('#containerLinearRegressionSales').highcharts({
+						chart: {
+					},
+					xAxis: {
+						min: -0.5,
+						max: 5.5
+					},
+					yAxis: {
+						min: 10000
+					},
+					title: {
+						text: 'Sales Amount Prediction'
+					},
+					series: [{
+						type: 'line',
+						name: 'Sales Amounts',
+						data: [[1, parseInt(next_5day_sales[0])], [5, parseInt(next_5day_sales[1])]],
+						marker: {
+							enabled: false
+						},
+						states: {
+							hover: {
+							lineWidth: 0
+							}
+						},
+						enableMouseTracking: true
+					}]
+				});
+			},
+			setChart = function (start){
+				start_day = parseInt(start);
+				setSalesChart(start_day);
+				setSpotsChart(start_day);
+			},
+			setChart(1);
+			setLinearRegression();
+			setLinearRegressionSales();
+
+			for(k=2;k<347;k++){
+				$('#start_day').append('<option value="'+k+'">'+k+'</option>');
+			}
+		});
+  	</script>
+</html>
