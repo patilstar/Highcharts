@@ -13,8 +13,44 @@ Select Start Day:
 <select id="start_day" onchange="setChart(this.value);"><option value="1" selected>1</option></select>
 <div id="containerSalesChart" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
 <hr>
-<div id="containerSpotsChart" style="min-width: 400px; height: 400px; margin: 0 auto;box-shadow:100px 10px 100px;"></div>
+<div id="containerSpotsChart" style="min-width: 400px; height: 400px; margin: 0 auto;box-shadow:100px 10px 50px;"></div>
 <hr>
+<div style="box-shadow:10px 10px 100px yellow;padding:20px;border: 1px solid gray;">
+	<table >
+		<tr>
+			<th align="right">Enter Values for Next 5 Days &rarr;</th>
+			<th>1</th>
+			<th>2</th>
+			<th>3</th>
+			<th>4</th>
+			<th>5</th>
+		</tr>
+		<tr>
+			<td align="right">Sales Amount &rarr;</th>
+			<td><input type="text" style="width:100px;" id="sales_amount_next_1"></td>
+			<td><input type="text" style="width:100px;" id="sales_amount_next_2"></td>
+			<td><input type="text" style="width:100px;" id="sales_amount_next_3"></td>
+			<td><input type="text" style="width:100px;" id="sales_amount_next_4"></td>
+			<td><input type="text" style="width:100px;" id="sales_amount_next_5"></td>
+		</tr>
+		<tr>
+			<td align="right">Peak Spots &rarr;</th>
+			<td><input type="text" style="width:100px;" id="peak_spots_next_1"></td>
+			<td><input type="text" style="width:100px;" id="peak_spots_next_2"></td>
+			<td><input type="text" style="width:100px;" id="peak_spots_next_3"></td>
+			<td><input type="text" style="width:100px;" id="peak_spots_next_4"></td>
+			<td><input type="text" style="width:100px;" id="peak_spots_next_5"></td>
+		</tr>
+		<tr>
+			<td align="right">Non Peak Spots &rarr;</th>
+			<td><input type="text" style="width:100px;" id="non_peak_spots_next_1"></td>
+			<td><input type="text" style="width:100px;" id="non_peak_spots_next_2"></td>
+			<td><input type="text" style="width:100px;" id="non_peak_spots_next_3"></td>
+			<td><input type="text" style="width:100px;" id="non_peak_spots_next_4"></td>
+			<td><input type="text" style="width:100px;" id="non_peak_spots_next_5"><input type="button" value="Genrate" onclick="regenrateLinearRegressions();"></td>
+		</tr>
+	</table>
+</div>
 <div style="float:left;width:50%">
 	<div id="containerLinearRegression" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
 </div>
@@ -59,11 +95,11 @@ Select Start Day:
 			last_5day_peak = yearly_data_peak.slice((num_days_per_year - 5), num_days_per_year);
 			last_5day_non_peak = yearly_data_non_peak.slice((num_days_per_year - 5), num_days_per_year);
 		
-			next_5day = getNext5Days(last_5day_sales);
+			next_5day = getNext5Days(last_5day_sales, "sales_amount_next");
 			next_5day_sales = next_5day.split("|");
-			next_5day = getNext5Days(last_5day_peak);
+			next_5day = getNext5Days(last_5day_peak, "peak_spots_next");
 			next_5day_peak = next_5day.split("|");
-			next_5day = getNext5Days(last_5day_non_peak);
+			next_5day = getNext5Days(last_5day_non_peak, "non_peak_spots_next");
 			next_5day_non_peak = next_5day.split("|");
 		
 			function getSumOfArrayValues(array){
@@ -74,12 +110,24 @@ Select Start Day:
 				}
 				return sum;
 			}
-			function getNext5Days(last_day){				
+			function getNext5Days(last_day, field){		
+				var field_1 = document.getElementById(field + "_" + 1);	
+				var field_2 = document.getElementById(field + "_" + 2);
+				var field_3 = document.getElementById(field + "_" + 3);
+				var field_4 = document.getElementById(field + "_" + 4);
+				var field_5 = document.getElementById(field + "_" + 5);	
 				next_day_1 = Math.round((last_day[4] + last_day[3] + last_day[2] + last_day[1] + last_day[0]) / 5) ;
 				next_day_2 = Math.round((last_day[4] + last_day[3] + last_day[2] + last_day[1] + next_day_1) / 5) ;
 				next_day_3 = Math.round((last_day[4] + last_day[3] + last_day[2] + next_day_1 + next_day_2) / 5) ;
 				next_day_4 = Math.round((last_day[4] + last_day[3] + next_day_1 + next_day_2 + next_day_3) / 5) ;
-				next_day_5 = Math.round((last_day[4] + next_day_1 + next_day_2 + next_day_3 + next_day_4) / 5) ;				
+				next_day_5 = Math.round((last_day[4] + next_day_1 + next_day_2 + next_day_3 + next_day_4) / 5) ;
+				
+				field_1.value  =  next_day_1;
+				field_2.value  =  next_day_2;
+				field_3.value  =  next_day_3;
+				field_4.value  =  next_day_4;
+				field_5.value  =  next_day_5;
+								
 				return  next_day_1 + "|" + next_day_5 ;		
 			
 			}
@@ -196,6 +244,11 @@ Select Start Day:
 				},
 
 				setLinearRegression = function(){
+					peak_next_day_1 = $('#peak_spots_next_1').val();
+					peak_next_day_5 = $('#peak_spots_next_5').val();
+					non_peak_next_day_1 = $('#non_peak_spots_next_1').val();
+					non_peak_next_day_5 = $('#non_peak_spots_next_5').val();
+					
 					$('#containerLinearRegression').highcharts({
 						chart: {
 					},
@@ -212,7 +265,7 @@ Select Start Day:
 					series: [{
 						type: 'line',
 						name: 'Peak spots',
-						data: [[1, parseInt(next_5day_peak[0])], [5, parseInt(next_5day_peak[1])]],
+						data: [[1, parseInt(peak_next_day_1)], [5, parseInt(peak_next_day_5)]],
 						marker: {
 							enabled: false
 						},
@@ -225,7 +278,7 @@ Select Start Day:
 					}, {
 						type: 'line',
 						name: 'Non-peak spots',
-						data: [[1, parseInt(next_5day_non_peak[0])], [5, parseInt(next_5day_non_peak[1])]],
+						data: [[1, parseInt(non_peak_next_day_1)], [5, parseInt(non_peak_next_day_5)]],
 						marker: {
 							enabled: false
 						}
@@ -233,6 +286,8 @@ Select Start Day:
 				});
 			},
 			setLinearRegressionSales = function(){
+					sales_next_day_1 = $('#sales_amount_next_1').val();
+					sales_next_day_5 = $('#sales_amount_next_5').val();
 					$('#containerLinearRegressionSales').highcharts({
 						chart: {
 					},
@@ -249,7 +304,7 @@ Select Start Day:
 					series: [{
 						type: 'line',
 						name: 'Sales Amounts',
-						data: [[1, parseInt(next_5day_sales[0])], [5, parseInt(next_5day_sales[1])]],
+						data: [[1, parseInt(sales_next_day_1)], [5, parseInt(sales_next_day_5)]],
 						marker: {
 							enabled: false
 						},
@@ -266,6 +321,10 @@ Select Start Day:
 				start_day = parseInt(start);
 				setSalesChart(start_day);
 				setSpotsChart(start_day);
+			},
+			regenrateLinearRegressions = function (){
+				setLinearRegression();
+				setLinearRegressionSales();
 			},
 			setChart(1);
 			setLinearRegression();
